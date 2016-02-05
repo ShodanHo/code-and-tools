@@ -83,7 +83,7 @@ public:
     std::string ret("results ");
 
     {
-      char resultsSummary[50];
+      char resultsSummary[100];
       sprintf(resultsSummary,
 	      "total tests=%3u total passes=%3u total fails=%3u total nyi=%3u",
 	      tests, passes, fails.size(), nyi.size());
