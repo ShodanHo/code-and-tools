@@ -46,3 +46,36 @@ operator-(const struct timeval& tv1, const struct timeval& tv2)
 
   return tv;
 }
+
+struct timeval timeval_ctor(void)
+{
+  struct timeval ret;
+  ret.tv_sec = 0;
+  ret.tv_usec = 0;
+  return ret;
+}
+
+struct timeval timeval_ctor(decltype(timeval::tv_sec) sec)
+{
+  struct timeval ret;
+  ret.tv_sec = sec;
+  ret.tv_usec = 0;
+  return ret;
+}
+
+struct timeval timeval_ctor(decltype(timeval::tv_sec) sec,
+			    decltype(timeval::tv_usec) usec)
+{
+  struct timeval ret;
+  ret.tv_sec = sec;
+  ret.tv_usec = usec;
+  return ret;
+}
+
+#include <sys/time.h>
+struct timeval timeval_now(void)
+{
+  struct timeval now;
+  gettimeofday(&now,0);
+  return now;
+}
