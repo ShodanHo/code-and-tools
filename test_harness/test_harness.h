@@ -7,7 +7,7 @@
 
 #define HERE() __FUNCTION__ << ':' << __LINE__
 #define PASS() this->pass(__FUNCTION__,__LINE__)
-#define FAIL() this->fail(__FUNCTION__,__LINE__)
+#define FAIL() this->fail(__PRETTY_FUNCTION__,__LINE__)
 #define NYI() this->notyetimplemented(__FUNCTION__,__LINE__)
 #define FN() std::cout << HERE() << ":start" << std::endl
 #define PASSFAIL(x) if (x) PASS(); else FAIL();

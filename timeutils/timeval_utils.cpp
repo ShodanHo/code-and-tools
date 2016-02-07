@@ -23,6 +23,11 @@ bool operator==(const struct timeval& tv1, const struct timeval& tv2)
   return ((tv1.tv_sec == tv2.tv_sec) && (tv1.tv_usec == tv2.tv_usec));
 }
 
+bool operator!=(const struct timeval& tv1, const struct timeval& tv2)
+{
+  return !(tv1 == tv2);
+}
+
 struct timeval
 operator+(const struct timeval& tv1, const struct timeval& tv2)
 {
