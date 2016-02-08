@@ -80,3 +80,4 @@ Doxyfile.bak
 /coursera/C++_For_C_Programmers/code/slist
 timeutils/test_timeutils
 detectors/test_detectors
+mqtt/mqtt_publisher2/test_mqtt_publisher
