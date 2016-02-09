@@ -16,11 +16,12 @@ The rest of the data are random 32bit floats.
 
 #include <getopt.h>
 #include <mosquitto.h>
-#include <boost/format.hpp>
+//#include <boost/format.hpp>
 
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
+#include "mutexed_collections.h"
 
 #define DISABLE_NAGLE 0
 
@@ -39,10 +40,10 @@ bool get_timestamp(uint64_t &nanosec)
 
 void publish_some_data(struct mosquitto *mosq,
 		       std::string topic,
-		       int bins,
-		       size_t element_size,
+		       std::string payload,
 		       int qos)
 {
+#if 0
   static std::default_random_engine generator;
   static std::uniform_real_distribution<float> distribution(0.0, 1.0);
 
@@ -60,6 +61,15 @@ void publish_some_data(struct mosquitto *mosq,
   //  std::cout << "Publishing " << payload_size << " bytes..." << std::endl;
   int mid;
   int code = mosquitto_publish(mosq, &mid, topic.c_str(), payload_size, payload, qos, /*(retain=*/false);
+#else
+  //char str[100];
+  //static int count = 0;
+  //sprintf(str,"hello world %d",count++);
+  //std::string payload(str);
+  int mid;
+  int code = mosquitto_publish(mosq, &mid, topic.c_str(),
+			       payload.size(), payload.c_str(), qos, /*(retain=*/false);
+#endif
   if (code != MOSQ_ERR_SUCCESS) {
     switch (code) {
     case MOSQ_ERR_INVAL:
@@ -86,10 +96,10 @@ void publish_some_data(struct mosquitto *mosq,
 
   //  std::cout << "Published" << std::endl;
 
-  delete payload;
+  //delete payload;
 }
 
-int run_publisher(int argc, char* const argv[])
+int run_publisher(int argc, char* const argv[], mutexed_list<std::string>* input_list)
 {
   mosquitto_lib_init();
 #if 0
@@ -241,9 +251,16 @@ int run_publisher(int argc, char* const argv[])
     get_timestamp(next_call_nsec);
 
     uint64_t period_nsec = static_cast<uint64_t>(ceil(1e9/rate));
-    
+#define STR(x) #x << '=' << x
+
     for (;;) {
-      publish_some_data(mosq, topic, bins, element_size, qos);
+      if (input_list->size() > 0)
+      {
+	std::string payload = input_list->front_value();
+	input_list->pop_front();
+	std::cout << STR(payload) << '\n';
+	publish_some_data(mosq, topic, payload, qos);
+      }
       next_call_nsec += period_nsec;
       uint64_t now_nsec;
       get_timestamp(now_nsec);

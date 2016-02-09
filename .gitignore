@@ -81,3 +81,6 @@ Doxyfile.bak
 timeutils/test_timeutils
 detectors/test_detectors
 mqtt/mqtt_publisher2/test_mqtt_publisher
+mqtt/client/mosquitto_pub
+mqtt/mqtt_publisher/mqtt_publisher
+mqtt/mqtt_timed_publisher/mqtt_timed_publisher

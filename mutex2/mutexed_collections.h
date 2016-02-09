@@ -1,6 +1,9 @@
 #ifndef __MUTEXED_COLLECTIONS_H__
 #define __MUTEXED_COLLECTIONS_H__
 
+#include <mutex>          // std::mutex, std::lock
+#include <list>
+
 struct lock_t
 {
   std::mutex* mMtx;

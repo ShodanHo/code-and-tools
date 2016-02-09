@@ -11,9 +11,9 @@
 .SUFFIXES:
 .SUFFIXES: .c .cc .cpp .o .y
 
-LINK=c++ $^ -o $@ -L /home/stuartf/projects/mosquitto-1.4.7/lib/ -l mosquitto
+LINK=c++ $^ -o $@ -L ~/workspace/mosquitto-1.4.7/lib -l mosquitto -l pthread
 MAKEFILE_DEPEND = .depend
-INCLUDES = -I /home/stuartf/projects/mosquitto-1.4.7/lib
+INCLUDES = -I ~/workspace/mosquitto-1.4.7/lib -I ../../mutex2
 
 .cc.o:
 	c++ $(INCLUDES) -g -Wall -c $< -o $@
