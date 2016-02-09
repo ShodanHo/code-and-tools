@@ -21,7 +21,7 @@ The rest of the data are random 32bit floats.
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
-#include "mutexed_collections.h"
+#include "mutex_cond_collections.h"
 
 #define DISABLE_NAGLE 0
 
@@ -99,7 +99,7 @@ void publish_some_data(struct mosquitto *mosq,
   //delete payload;
 }
 
-int run_publisher(int argc, char* const argv[], mutexed_list<std::string>* input_list)
+int run_publisher(int argc, char* const argv[], conditioned_list<std::string>* input_list)
 {
   mosquitto_lib_init();
 #if 0
@@ -247,24 +247,19 @@ int run_publisher(int argc, char* const argv[], mutexed_list<std::string>* input
       }
     }
 
-    uint64_t next_call_nsec;
-    get_timestamp(next_call_nsec);
-
-    uint64_t period_nsec = static_cast<uint64_t>(ceil(1e9/rate));
 #define STR(x) #x << '=' << x
 
     for (;;) {
-      if (input_list->size() > 0)
+      auto ret = input_list->cond_wait_for(std::chrono::milliseconds(500));
+      if (ret == std::cv_status::timeout)
+	std::cout << "timeout\n";
+      while (input_list->size() > 0)
       {
 	std::string payload = input_list->front_value();
 	input_list->pop_front();
 	std::cout << STR(payload) << '\n';
 	publish_some_data(mosq, topic, payload, qos);
       }
-      next_call_nsec += period_nsec;
-      uint64_t now_nsec;
-      get_timestamp(now_nsec);
-      std::this_thread::sleep_for(std::chrono::nanoseconds(next_call_nsec - now_nsec));
     }
 
     mosquitto_disconnect(mosq);
