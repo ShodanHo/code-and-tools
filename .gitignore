@@ -84,3 +84,4 @@ mqtt/mqtt_publisher2/test_mqtt_publisher
 mqtt/client/mosquitto_pub
 mqtt/mqtt_publisher/mqtt_publisher
 mqtt/mqtt_timed_publisher/mqtt_timed_publisher
+mutex3/test_cond_list
