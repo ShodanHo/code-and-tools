@@ -13,7 +13,7 @@
 
 LINK=c++ $^ -o $@ -L ~/workspace/mosquitto-1.4.7/lib -l mosquitto -l pthread
 MAKEFILE_DEPEND = .depend
-INCLUDES = -I ~/workspace/mosquitto-1.4.7/lib -I ../../mutex2
+INCLUDES = -I ~/workspace/mosquitto-1.4.7/lib -I ../../mutex3
 
 .cc.o:
 	c++ $(INCLUDES) -g -Wall -c $< -o $@
