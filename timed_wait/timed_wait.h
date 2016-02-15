@@ -4,27 +4,27 @@
 #include "mutex_cond_collections.h"
 #include <time.h>
 
-typedef enum _e_major_action
+typedef enum _e_timed_wait_action
 {
   MA_NOTHING,
   MA_TERMINATE_THREAD,
   MA_PULSES_POS_NEG_START, // first positive, last negative
   MA_PULSES_NEG_POS_START, // first negative, last positive
-} major_action_t;
+} timed_wait_action_t;
 
 struct pulse_cmd_t
 {
-  major_action_t mAction;
+  timed_wait_action_t mAction;
   struct timeval mPre;
   struct timeval mPositive;
   struct timeval mPeriod;
   unsigned mCount;
-  pulse_cmd_t(major_action_t major_action,
+  pulse_cmd_t(timed_wait_action_t action,
               struct timeval pre,
               struct timeval positive,
               struct timeval period,
               unsigned count)
-  : mAction(major_action)
+  : mAction(action)
   , mPre(pre)
   , mPositive(positive)
   , mPeriod(period)

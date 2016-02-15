@@ -9,18 +9,9 @@
 #define HERE() __FUNCTION__ << '(' << __LINE__ << ')'
 #define STR(x) #x << '=' << x
 
-typedef enum _e_minor_action
-{
-  MN_PULSE_DONE,
-  MN_PULSE_PRE,
-  MN_PULSE_POS,
-  MN_PULSE_NEG,
-} minor_action_t;
-
 struct pulse_action_t
 {
-  major_action_t mMajor_action;
-  minor_action_t mMinor_action;
+  timed_wait_action_t mAction;
   int mDoing; // 0=prior,1=positive,2=negative
   struct timeval mStart;
   struct timeval mPre;
@@ -30,8 +21,7 @@ struct pulse_action_t
   unsigned mPulses;
 
   pulse_action_t(void)
-  : mMajor_action(MA_NOTHING)
-  , mMinor_action(MN_PULSE_DONE)
+  : mAction(MA_NOTHING)
   , mDoing(0)
   , mStart(timeval_ctor(0))
   , mPre(timeval_ctor(0))
@@ -40,8 +30,7 @@ struct pulse_action_t
   , mPulseNum(0)
   , mPulses(0) {}
 
-  pulse_action_t(const major_action_t& major_action,
-                 const minor_action_t& minor_action,
+  pulse_action_t(const timed_wait_action_t& action,
                  int doing,
                  const struct timeval& start,
                  const struct timeval& pre,
@@ -49,8 +38,7 @@ struct pulse_action_t
                  const struct timeval& period,
                  unsigned pulseNum,
                  unsigned pulses)
-  : mMajor_action(major_action)
-  , mMinor_action(minor_action)
+  : mAction(action)
   , mDoing(doing)
   , mStart(start)
   , mPre(pre)
@@ -95,7 +83,6 @@ void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<bool> *
       switch(cmd.mAction) {
         case MA_NOTHING:
           pulse_action = pulse_action_t(MA_NOTHING, // mMajor_action
-                                        MN_PULSE_DONE, // mMinor_action
                                         0, // mDoing(0)
                                         timeval_ctor(0), // mStart
                                         timeval_ctor(0), // mPre
@@ -109,8 +96,7 @@ void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<bool> *
           return;
 
         case MA_PULSES_POS_NEG_START:
-          pulse_action = pulse_action_t(MA_PULSES_POS_NEG_START, // mMajor_action
-                                        MN_PULSE_PRE, // mMinor_action
+          pulse_action = pulse_action_t(MA_PULSES_POS_NEG_START, // mAction
                                         0, // mDoing(0)
                                         now, // mStart
                                         cmd.mPre, // mPre
@@ -127,7 +113,7 @@ void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<bool> *
     }
 
     // run "state machine"
-    switch(pulse_action.mMajor_action) {
+    switch(pulse_action.mAction) {
       case MA_NOTHING:
         break;
 
@@ -198,16 +184,3 @@ void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<bool> *
   }
 }
 
-#if 0
-//void pause_thread(int n, conditioned_list<pulse_cmd_t> *cmds)
-void pause_thread(conditioned_list<pulse_cmd_t> *cmds)
-{
-  int n = 5;
-  for (;;) {
-    //cmds.cond_wait();
-    cmds->cond_wait_for(std::chrono::milliseconds(200));
-    //std::this_thread::sleep_for (std::chrono::seconds(n));
-    std::cout << "pause of " << n << " seconds ended\n";
-  }
-}
-#endif
