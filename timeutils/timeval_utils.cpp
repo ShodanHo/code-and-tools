@@ -1,5 +1,6 @@
 #include "timeval_utils.h"
 #include "stdio.h"
+#include <sys/time.h>
 #include <sstream>
 
 std::string toString(const struct timeval& tv)
@@ -28,6 +29,28 @@ bool operator!=(const struct timeval& tv1, const struct timeval& tv2)
   return !(tv1 == tv2);
 }
 
+bool operator<(const struct timeval& tv1, const struct timeval& tv2)
+{
+  if (tv1.tv_sec < tv2.tv_sec) return true;
+  if ((tv1.tv_sec == tv2.tv_sec) && (tv1.tv_usec < tv2.tv_usec)) return true;
+  return false;
+}
+
+bool operator<=(const struct timeval& tv1, const struct timeval& tv2)
+{
+  return !(tv2 < tv1);
+}
+
+bool operator>(const struct timeval& tv1, const struct timeval& tv2)
+{
+  return (tv2 < tv1);
+}
+
+bool operator>=(const struct timeval& tv1, const struct timeval& tv2)
+{
+  return (tv1 < tv2);
+}
+
 struct timeval
 operator+(const struct timeval& tv1, const struct timeval& tv2)
 {
@@ -50,6 +73,18 @@ operator-(const struct timeval& tv1, const struct timeval& tv2)
   }
 
   return tv;
+}
+
+struct timeval operator*(uint32_t c, const struct timeval& tv)
+{
+  struct timeval ret = tv;
+  uint64_t usec = static_cast<uint64_t>(ret.tv_usec) * c; // should not overflow for c < 1,000,000
+  ret.tv_sec *= c;
+  while (usec > 1000000) {
+    ++ret.tv_sec;
+    usec -= 1000000;
+  }
+  return ret;
 }
 
 struct timeval timeval_ctor(void)
@@ -77,7 +112,6 @@ struct timeval timeval_ctor(decltype(timeval::tv_sec) sec,
   return ret;
 }
 
-#include <sys/time.h>
 struct timeval timeval_now(void)
 {
   struct timeval now;

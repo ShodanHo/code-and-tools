@@ -13,24 +13,24 @@
 
 MAKEFILE_DEPEND = .depend
 
-LINK=c++ $< -o $@
+LINK=c++ $^ -o $@
 
 .cpp.o:
 	c++ -std=c++11 -g -Wall -c $< -o $@
 
 TARGETS =
-TARGETS += test_cond_list
+TARGETS += test_timed_wait
 
 all:	$(TARGETS)
 
 
 depend:
-	cc -MM *.cpp > $(MAKEFILE_DEPEND)
+	cc -std=c++11 -MM *.cpp > $(MAKEFILE_DEPEND)
 
 clean:
 	rm -f *.o $(TARGETS) $(MAKEFILE_DEPEND)
 
-test_cond_list: test_cond_list.o
+test_timed_wait: test_timed_wait.o timed_wait.o timeval_utils.o
 	$(LINK) -lpthread
 
 -include $(MAKEFILE_DEPEND)

@@ -4,6 +4,9 @@
 Doxyfile
 Doxyfile.bak
 .compiled
+.cproject
+.project
+.settings/
 /templates/test_implicit
 /templates/test_templates
 /templates/test_variables
