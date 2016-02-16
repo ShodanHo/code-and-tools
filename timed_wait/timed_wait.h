@@ -34,6 +34,6 @@ struct pulse_cmd_t
 
 std::ostream& operator<<(std::ostream& os, const pulse_cmd_t& pulse_cmd);
 
-void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<bool> *done_output);
+void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<int> *state_output);
 
 #endif // __TIMED_WAIT_H__

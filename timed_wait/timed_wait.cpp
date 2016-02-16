@@ -6,13 +6,42 @@
 #include <string>
 #include "timeval_utils.h"
 
+#define DEBUG
+
 #define HERE() __FUNCTION__ << '(' << __LINE__ << ')'
 #define STR(x) #x << '=' << x
+
+typedef enum e_doing {
+  eDOING_NOTHING,
+  eDOING_PRE,
+  eDOING_POSITIVE,
+  eDOING_NEGATIVE
+} PulseDoing;
+
+std::string toString(const PulseDoing& pulseDoing)
+{
+#define CASE_LITERAL_STREAM_BREAK(x,y) case y: x << #y; break
+
+  std::ostringstream oss;
+  switch (pulseDoing) {
+    CASE_LITERAL_STREAM_BREAK(oss,eDOING_NOTHING);
+    CASE_LITERAL_STREAM_BREAK(oss,eDOING_PRE);
+    CASE_LITERAL_STREAM_BREAK(oss,eDOING_POSITIVE);
+    CASE_LITERAL_STREAM_BREAK(oss,eDOING_NEGATIVE);
+  }
+  return oss.str();
+}
+
+std::ostream& operator<<(std::ostream&os, const PulseDoing& pd)
+{
+  os << toString(pd);
+  return os;
+}
 
 struct pulse_action_t
 {
   timed_wait_action_t mAction;
-  int mDoing; // 0=prior,1=positive,2=negative
+  PulseDoing mDoing; // 0=nothing,1=prior,2=positive,3=negative
   struct timeval mStart;
   struct timeval mPre;
   struct timeval mPositive;
@@ -22,7 +51,7 @@ struct pulse_action_t
 
   pulse_action_t(void)
   : mAction(MA_NOTHING)
-  , mDoing(0)
+  , mDoing(eDOING_NOTHING)
   , mStart(timeval_ctor(0))
   , mPre(timeval_ctor(0))
   , mPositive(timeval_ctor(0))
@@ -31,7 +60,7 @@ struct pulse_action_t
   , mPulses(0) {}
 
   pulse_action_t(const timed_wait_action_t& action,
-                 int doing,
+                 PulseDoing doing,
                  const struct timeval& start,
                  const struct timeval& pre,
                  const struct timeval& positive,
@@ -46,7 +75,27 @@ struct pulse_action_t
   , mPeriod(period)
   , mPulseNum(pulseNum)
   , mPulses(pulses) {}
+  std::string toString(void) const;
 };
+
+std::string pulse_action_t::toString(void) const
+{
+  std::ostringstream oss;
+  oss << STR(mDoing) << ','
+      << STR(mStart) << ','
+      << STR(mPre) << ','
+      << STR(mPositive) << ','
+      << STR(mPeriod) << ','
+      << STR(mPulseNum) << ','
+      << STR(mPulses);
+  return oss.str();
+}
+
+std::ostream& operator<<(std::ostream&os, const pulse_action_t& pa)
+{
+  os << pa.toString();
+  return os;
+}
 
 std::string
 pulse_cmd_t::toString(void) const
@@ -66,30 +115,36 @@ std::ostream& operator<<(std::ostream& os, const pulse_cmd_t& pulse_cmd)
   return os;
 }
 
-void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<bool> *done_output)
+void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<int> *state_output)
 {
   pulse_action_t pulse_action;
 
   for (;;) {
     cmds->cond_wait_for(std::chrono::milliseconds(1));
+    cmds->cond_wait_for(std::chrono::seconds(1));
 
-    timeval now = timeval_now(); // take the time
+    const timeval now = timeval_now(); // take the time
 
     if (cmds->size() > 0) {
       auto cmd = cmds->front_value();
       cmds->pop_front();
+#ifdef DEBUG
       std::cout << STR(cmd) << '\n';
+#endif
 
       switch(cmd.mAction) {
         case MA_NOTHING:
           pulse_action = pulse_action_t(MA_NOTHING, // mMajor_action
-                                        0, // mDoing(0)
+                                        eDOING_NOTHING, // mDoing(0)
                                         timeval_ctor(0), // mStart
                                         timeval_ctor(0), // mPre
                                         timeval_ctor(0), // mPositive
                                         timeval_ctor(0), // mPeriod
                                         0, // unsigned mPulseNum
                                         0); // unsigned mPulses;
+#ifdef DEBUG
+         std::cout << STR(pulse_action) << '\n';
+#endif
           break;
 
         case MA_TERMINATE_THREAD:
@@ -97,14 +152,17 @@ void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<bool> *
 
         case MA_PULSES_POS_NEG_START:
           pulse_action = pulse_action_t(MA_PULSES_POS_NEG_START, // mAction
-                                        0, // mDoing(0)
+                                        eDOING_NOTHING, // mDoing(0)
                                         now, // mStart
                                         cmd.mPre, // mPre
                                         cmd.mPositive, // mPositive
                                         cmd.mPeriod, // mPeriod
                                         0, // unsigned mPulseNum
                                         cmd.mCount); // unsigned mPulses;
+#ifdef DEBUG
           std::cout << "Initialised parameters\n";
+          std::cout << STR(pulse_action) << '\n';
+#endif
           break;
 
         case MA_PULSES_NEG_POS_START:
@@ -122,36 +180,67 @@ void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<bool> *
 
       case MA_PULSES_POS_NEG_START:
         if (pulse_action.mPulseNum >= pulse_action.mPulses) {
+#ifdef DEBUG
           std::cout << "done\n";
+#endif
+          state_output->push_back(0);
+          pulse_action.mDoing = eDOING_NOTHING;
         }
         else
         {
+#ifdef DEBUG
           struct timeval into = now - pulse_action.mStart;
-          if (pulse_action.mDoing == 0)
+#endif
+          if (pulse_action.mDoing == eDOING_NOTHING)
           {
-            struct timeval left = now - pulse_action.mStart - pulse_action.mPre;
+#ifdef DEBUG
+            struct timeval left = now - pulse_action.mStart;
+#endif
+#ifdef DEBUG
+            std::cout << "pre " << STR(into) << ' ' << STR(left) << ' ' << STR(now) << ' ' << STR(pulse_action) << '\n';
+#endif
+            pulse_action.mDoing = eDOING_PRE;
+            state_output->push_back(1);
+          }
+          else if (pulse_action.mDoing == eDOING_PRE)
+          {
+#ifdef DEBUG
+            struct timeval left = now - pulse_action.mStart;
+#endif
             if (now < (pulse_action.mStart + pulse_action.mPre)) {
-              std::cout << "pre " << STR(into) << ' ' << STR(left) << '\n';
-              pulse_action.mDoing = 0;
+#ifdef DEBUG
+              std::cout << "pre " << STR(into) << ' ' << STR(left) << ' ' << STR(now) << ' ' << STR(pulse_action) << '\n';
+#endif
+              pulse_action.mDoing = eDOING_PRE;
+              //state_output->push_back(1);
             }
             else
             {
-              std::cout << "+ve " << STR(into) << ' ' << STR(left) << '\n';
-              pulse_action.mDoing = 1;
+#ifdef DEBUG
+              std::cout << "+ve " << STR(into) << ' ' << STR(left) << ' ' << STR(now) << ' ' << STR(pulse_action) << '\n';
+#endif
+              pulse_action.mDoing = eDOING_POSITIVE;
+              state_output->push_back(2);
             }
           }
-          else if (pulse_action.mDoing == 1)
+          else if (pulse_action.mDoing == eDOING_POSITIVE)
           {
             struct timeval left = now - pulse_action.mStart - pulse_action.mPre - pulse_action.mPulseNum * pulse_action.mPeriod;
             if (left < pulse_action.mPositive)
             {
-              std::cout << "+ve " << STR(into) << ' ' << STR(left) << '\n';
-              pulse_action.mDoing = 1;
+#ifdef DEBUG
+              std::cout << "+ve " << STR(into) << ' ' << STR(left) << ' ' << STR(now) << ' ' << STR(pulse_action) << '\n';
+#endif
+              pulse_action.mDoing = eDOING_POSITIVE;
+              //state_output->push_back(2);
             }
             else
             {
-              std::cout << "-ve " << STR(into) << ' ' << STR(left) << '\n';
-              pulse_action.mDoing = 2;
+#ifdef DEBUG
+              std::cout << "-ve " << STR(into) << ' ' << STR(left) << ' ' << STR(now) << ' ' << STR(pulse_action) << '\n';
+#endif
+              pulse_action.mDoing = eDOING_NEGATIVE;
+              state_output->push_back(3);
             }
           }
           else
@@ -159,19 +248,28 @@ void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<bool> *
             struct timeval left = now - pulse_action.mStart - pulse_action.mPre - pulse_action.mPulseNum * pulse_action.mPeriod;
             if (left < pulse_action.mPeriod)
             {
-              std::cout << "-ve " << STR(into) << ' ' << STR(left) << '\n';
-              pulse_action.mDoing = 2;
+#ifdef DEBUG
+              std::cout << "-ve " << STR(into) << ' ' << STR(left) << ' ' << STR(now) << ' ' << STR(pulse_action) << '\n';
+#endif
+              pulse_action.mDoing = eDOING_NEGATIVE;
+              //state_output->push_back(3);
             }
             else
             {
               if (++pulse_action.mPulseNum >= pulse_action.mPulses) {
-                done_output->push_back(true); // signal finish
-                std::cout << "done " << STR(into) << ' ' << STR(left) << '\n';
+#ifdef DEBUG
+                std::cout << "done " << STR(into) << ' ' << STR(left) << ' ' << STR(now) << ' ' << STR(pulse_action) << '\n';
+#endif
+                pulse_action.mDoing = eDOING_NOTHING;
+                state_output->push_back(4); // signal finish
               }
               else
               {
-                std::cout << "+ve " << STR(into) << ' ' << STR(left) << '\n';
-                pulse_action.mDoing = 1;
+#ifdef DEBUG
+                std::cout << "+ve " << STR(into) << ' ' << STR(left) << ' ' << STR(now) << ' ' << STR(pulse_action) << '\n';
+#endif
+                pulse_action.mDoing = eDOING_POSITIVE;
+                state_output->push_back(2);
               }
             }
           }
