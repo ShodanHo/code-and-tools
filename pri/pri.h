@@ -1,39 +1,69 @@
-#ifndef __TIMED_WAIT_H__
-#define __TIMED_WAIT_H__
+#ifndef __PRI_H__
+#define __PRI_H__
 
-#include "mutex_cond_collections.h"
-#include <time.h>
+#include "timeval_utils.h"
 
-typedef enum _e_timed_wait_action
+typedef enum _PriCommand
 {
-  MA_NOTHING,
-  MA_TERMINATE_THREAD,
-  MA_PULSES_POS_NEG_START, // first positive, last negative
-  MA_PULSES_NEG_POS_START, // first negative, last positive
-} timed_wait_action_t;
+  PC_ABORT,
+  PC_NOTHING, // continue
+  PC_POS_NEG_START,
+  PC_NEG_POS_START,
+} PriCommand;
 
-struct pulse_cmd_t
+typedef enum _PriAction
 {
-  timed_wait_action_t mAction;
-  struct timeval mPre;
-  struct timeval mPositive;
-  struct timeval mPeriod;
-  unsigned mCount;
-  pulse_cmd_t(timed_wait_action_t action,
-              struct timeval pre,
-              struct timeval positive,
-              struct timeval period,
-              unsigned count)
-  : mAction(action)
-  , mPre(pre)
-  , mPositive(positive)
-  , mPeriod(period)
-  , mCount(count) {}
-  std::string toString(void) const;
+  PA_NOTHING,
+  PA_PULSES_POS_NEG, // first positive, last negative
+  PA_PULSES_NEG_POS, // first negative, last positive
+} PriAction;
+
+typedef enum _PriOutputStatus
+{
+  PSS_NOT_STARTED,
+  PSS_DELAY_PERIOD,
+  PSS_POSITIVE_PERIOD,
+  PSS_NEGATIVE_PERIOD,
+  PSS_FINISHED
+} PriOutputStatus;
+
+struct PriParams
+{
+  struct timeval delayTime;
+  struct timeval positiveTime;
+  struct timeval cycleTime;
+  unsigned cycleNumber;
+  PriParams(const struct timeval& _delayTime,
+            const struct timeval& _positiveTime,
+            const struct timeval& _cycleTime,
+            unsigned _cycleNumber)
+  : delayTime(_delayTime)
+  , positiveTime(_positiveTime)
+  , cycleTime(_cycleTime)
+  , cycleNumber(_cycleNumber) {}
 };
 
-std::ostream& operator<<(std::ostream& os, const pulse_cmd_t& pulse_cmd);
+struct PriState
+{
+  PriAction action;
+  PriOutputStatus outputStatus;
+  struct timeval startTime;
+  unsigned cycleCount;
+  PriState(PriAction _action,
+           PriOutputStatus _outputStatus,
+           const struct timeval& _startTime,
+           unsigned _cycleCount)
+  : action(_action)
+  , outputStatus(_outputStatus)
+  , startTime(_startTime)
+  , cycleCount(_cycleCount) {}
+  PriState()
+  : action(PA_NOTHING)
+  , outputStatus(PSS_NOT_STARTED)
+  , startTime(timeval_ctor())
+  , cycleCount(0) {}
+};
 
-void do_timed_wait(conditioned_list<pulse_cmd_t> *cmds, conditioned_list<int> *state_output);
+PriOutputStatus runPri(const PriCommand& cmd, const PriParams& priParams, PriState& priState, const struct timeval& when);
 
-#endif // __TIMED_WAIT_H__
+#endif // __PRI_H__

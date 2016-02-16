@@ -19,7 +19,7 @@ LINK=c++ $^ -o $@
 	c++ -std=c++11 -g -Wall -c $< -o $@
 
 TARGETS =
-TARGETS += test_timed_wait
+TARGETS += test_pri
 
 all:	$(TARGETS)
 
@@ -30,7 +30,7 @@ depend:
 clean:
 	rm -f *.o $(TARGETS) $(MAKEFILE_DEPEND)
 
-test_timed_wait: test_timed_wait.o timed_wait.o timeval_utils.o
+test_pri: test_pri.o pri.o timeval_utils.o
 	$(LINK) -lpthread
 
 -include $(MAKEFILE_DEPEND)
