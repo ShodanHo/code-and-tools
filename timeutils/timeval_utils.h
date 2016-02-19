@@ -5,6 +5,7 @@
 
 std::string toString(const struct timeval& tv);
 std::ostream& operator<<(std::ostream& os, const struct timeval& tv);
+std::istream& operator>> (std::istream& in, timeval& tv);
 bool operator==(const struct timeval& tv1, const struct timeval& tv2);
 bool operator!=(const struct timeval& tv1, const struct timeval& tv2);
 bool operator<(const struct timeval& tv1, const struct timeval& tv2);

@@ -1,3 +1,4 @@
+#include <sstream>
 #include "test_harness.h"
 #include "timeval_utils.h"
 #include "stopwatch.h"
@@ -9,6 +10,7 @@ class timeutils_test : public test_harness_t
 {
   void test_timeval_operators(void);
   void test_stopwatch(void);
+  void test_streaming(void);
 
 public:
   void runAllTests(void)
@@ -16,9 +18,10 @@ public:
     try {
       test_timeval_operators();
       test_stopwatch();
+      test_streaming();
     } catch (...) {
       std::cout << __PRETTY_FUNCTION__
-		<< ":unhandled exception:" << std::endl;
+          << ":unhandled exception:" << std::endl;
     }
   }
 };
@@ -99,6 +102,52 @@ void timeutils_test::test_stopwatch(void)
   sw.stop();
   std::cout << TOSTR(sw) << std::endl
 	    << STR(sw.elapsed()) << std::endl;
+}
+
+void timeutils_test::test_streaming(void)
+{
+  {
+    std::string s("11.234567");
+
+    std::istringstream iss(s);
+
+    timeval tv;
+    iss >> tv;
+    std::cout << STR(tv) << '\n';
+
+    PASSFAIL(tv < timeval_ctor(11,234568));
+    PASSFAIL(tv > timeval_ctor(11,234550));
+  }
+  {
+    std::string s("11.23456");
+
+    std::istringstream iss(s);
+
+    timeval tv;
+    iss >> tv;
+    std::cout << STR(tv) << '\n';
+    PASSFAIL(tv == timeval_ctor(11,234560));
+  }
+  {
+    std::string s("11.");
+
+    std::istringstream iss(s);
+
+    timeval tv;
+    iss >> tv;
+    std::cout << STR(tv) << '\n';
+    PASSFAIL(tv == timeval_ctor(11));
+  }
+  {
+    std::string s("11");
+
+    std::istringstream iss(s);
+
+    timeval tv;
+    iss >> tv;
+    std::cout << STR(tv) << '\n';
+    PASSFAIL(tv == timeval_ctor(11));
+  }
 }
 
 int main()

@@ -20,10 +20,10 @@ LINK=c++ $^ -o $@
 MAKEFILE_DEPEND = .depend
 
 .cc.o:
-	c++ -g -Wall -c $< -o $@
+	c++ -std=c++11 -g -Wall -c $< -o $@
 
 .cpp.o:
-	c++ -g -Wall -c $< -o $@
+	c++ -std=c++11 -g -Wall -c $< -o $@
 
 TARGETS = 
 TARGETS += test_timeutils

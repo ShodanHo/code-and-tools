@@ -2,6 +2,7 @@
 #include "stdio.h"
 #include <sys/time.h>
 #include <sstream>
+#include <cmath> // modf
 
 std::string toString(const struct timeval& tv)
 {
@@ -17,6 +18,17 @@ operator<<(std::ostream& os, const struct timeval& tv)
 {
   os << toString(tv);
   return os;
+}
+
+std::istream& operator>> (std::istream& in, timeval& tv)
+{
+  float f;
+  in >> f;
+
+  double intpart;
+  double fractpart = modf (f , &intpart);
+  tv = timeval_ctor(intpart, fractpart * 1.0e6);
+  return in;
 }
 
 bool operator==(const struct timeval& tv1, const struct timeval& tv2)
