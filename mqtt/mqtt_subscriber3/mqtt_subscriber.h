@@ -8,6 +8,8 @@
 #ifndef MQTT_SUBSCRIBER_CPP_MQTT_SUBSCRIBER_H_
 #define MQTT_SUBSCRIBER_CPP_MQTT_SUBSCRIBER_H_
 
+#include <iostream>
+#include <list>
 #include "mosquitto.h"
 
 struct TopicQos
@@ -18,10 +20,14 @@ struct TopicQos
            decltype(qos) _qos)
   : topic(_topic)
   , qos(_qos) {}
+  std::string toString(void) const;
 };
 
-int run_subscriber(int argc, char* const argv[], void *data_ptr,
-                   std::string hostname, int port, unsigned num_threads, std::list<TopicQos> topicQoses,
+std::ostream& operator<<(std::ostream& os, const TopicQos& tq);
+
+int run_subscriber(void *data_ptr,
+                   const std::string* hostname, int port, unsigned num_threads,
+                   std::list<TopicQos>* topicQoses,
                    void (*message_callback)(struct mosquitto *mosq, void *obj,
                        const struct mosquitto_message *message));
 

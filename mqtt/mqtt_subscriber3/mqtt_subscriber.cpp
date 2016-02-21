@@ -1,10 +1,21 @@
-#include <iostream>
-#include <cstring>
-#include <cstdlib>
-#include <list>
-#include <errno.h>
-#include <getopt.h>
 #include "mqtt_subscriber.h"
+#include <sstream> // ostringstream
+#include <cstring> // strerror
+#include <errno.h> // errno
+
+std::string
+TopicQos::toString(void) const
+{
+  std::ostringstream oss;
+  oss << '(' << topic << ',' << qos << ')';
+  return oss.str();
+}
+
+std::ostream& operator<<(std::ostream& os, const TopicQos& tq)
+{
+  os << tq.toString();
+  return os;
+}
 
 static void subscribe_callback(struct mosquitto *mosq, void *obj, int mid, int qos_count,
                                const int *granted_qos)
@@ -16,78 +27,16 @@ static void subscribe_callback(struct mosquitto *mosq, void *obj, int mid, int q
   std::cout << std::endl;
 }
 
-int run_subscriber(int argc, char* const argv[], void *data_ptr,
-                   std::string hostname, int port, unsigned num_threads, std::list<TopicQos> topicQoses,
+int run_subscriber(void *data_ptr,
+                   const std::string* hostname, int port, unsigned num_threads,
+                   std::list<TopicQos>* topicQoses,
                    void (*message_callback)(struct mosquitto *mosq, void *obj,
                        const struct mosquitto_message *message))
 {
   mosquitto_lib_init();
 
-  //std::string hostname("localhost");
-  //std::list<std::string> topics;
-  //int qos = 0; // Cheap.
-  //int port = 1883;
-  //int num_threads = 1;
-
-  enum {
-    HELP_OPTION = '?',
-    //HOST_OPTION = 'h',
-    //TOPIC_OPTION = 't',
-    //QOS_OPTION = 'q',
-    PORT_OPTION = 'p',
-    //PARALLEL_OPTION = 'P',
-  };
-  struct option options[] = {
-    {"help", 0, nullptr, HELP_OPTION},
-    //{"mqtt-host", 1, nullptr, HOST_OPTION},
-    //{"topic", 1, nullptr, TOPIC_OPTION},
-    //{"qos", 1, nullptr, QOS_OPTION},
-    {"mqtt-port", 1, nullptr, PORT_OPTION},
-    //{"parallel", 1, nullptr, PARALLEL_OPTION},
-    {0}
-  };
-
-  bool more_options = true;
-  while (more_options) {
-    int status = getopt_long(argc, argv, "h:t:q:p:j", options, nullptr);
-
-    switch (status) {
-#if 0
-      case HOST_OPTION:
-      hostname = optarg;
-      break;
-
-    case TOPIC_OPTION:
-      topics.push_back(optarg);
-      break;
-#endif
-
-    case HELP_OPTION:
-      exit(EXIT_FAILURE);
-      break;
-
-#if 0
-    case QOS_OPTION:
-      qos = atoi(optarg);
-      break;
-
-    case PORT_OPTION:
-      port = atoi(optarg);
-      break;
-
-      case PARALLEL_OPTION:
-      num_threads = atoi(optarg);
-      break;
-#endif
-
-    default:
-      more_options = false;
-      break;
-    }
-  }
-
   std::cout << "Connect to host " << hostname << " on port " << port << std::endl;
-  for (auto& topicQos : topicQoses) {
+  for (auto& topicQos : *topicQoses) {
     std::cout << "Subscribe under topic " << topicQos.topic << " quality of service of " << topicQos.qos << std::endl;
   }
 
@@ -96,7 +45,7 @@ int run_subscriber(int argc, char* const argv[], void *data_ptr,
 
     for (unsigned i = 0; i < num_threads; i++) {
       struct mosquitto *mosq = mosquitto_new(nullptr, /*clean_session=*/true, data_ptr);
-      int code = mosquitto_connect(mosq, hostname.c_str(), port, /*keepalive=*/-1);
+      int code = mosquitto_connect(mosq, hostname->c_str(), port, /*keepalive=*/-1);
       if (code != MOSQ_ERR_SUCCESS) {
         switch (code) {
           case MOSQ_ERR_INVAL:
@@ -137,7 +86,7 @@ int run_subscriber(int argc, char* const argv[], void *data_ptr,
       }
     }
 
-    for (auto& topicQos : topicQoses) {
+    for (auto& topicQos : *topicQoses) {
       int mid;
       struct mosquitto* mosq = mosq_list.front();
 
