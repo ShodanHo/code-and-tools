@@ -58,20 +58,20 @@ static void publish_some_data(struct mosquitto *mosq,
   }
 }
 
-int run_mqtt_publisher(const std::string& hostname, int port,
+int run_mqtt_publisher(const std::string* hostname, int port,
                        conditioned_list<TopicPayloadQos>* input_list)
 {
-  mosquitto_lib_init();
+  //mosquitto_lib_init();
 
   std::cout << "MQTT publisher" << std::endl;
 
-  std::cout << "Connect to host " << hostname << " on port " << port << std::endl;
+  std::cout << "Connect to host " << *hostname << " on port " << port << std::endl;
 
   {
     struct mosquitto *mosq = mosquitto_new(nullptr, /*clean_session=*/true, nullptr);
 
     {
-      int code = mosquitto_connect(mosq, hostname.c_str(), port, /*keepalive=*/-1);
+      int code = mosquitto_connect(mosq, hostname->c_str(), port, /*keepalive=*/-1);
       if (code != MOSQ_ERR_SUCCESS) {
         switch (code) {
           case MOSQ_ERR_INVAL:

@@ -92,7 +92,7 @@ struct xyz
   int count;
 };
 
-void message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message)
+static void message_callback(struct mosquitto *mosq, void *obj, const struct mosquitto_message *message)
 {
   xyz* data_obj = reinterpret_cast<xyz*>(obj);
   std::lock_guard<std::mutex> guard(data_obj->mutex);
@@ -124,6 +124,7 @@ int main(int argc, char **argv)
 
   xyz data; data.count = 0;
 
+  mosquitto_lib_init();
   std::thread subscriber_thread(run_subscriber, &data, &broker, port, subThreads, &topicQoses, message_callback);
 
   for (;;)

@@ -33,7 +33,7 @@ int run_subscriber(void *data_ptr,
                    void (*message_callback)(struct mosquitto *mosq, void *obj,
                        const struct mosquitto_message *message))
 {
-  mosquitto_lib_init();
+  //mosquitto_lib_init();
 
   std::cout << "Connect to host " << hostname << " on port " << port << std::endl;
   for (auto& topicQos : *topicQoses) {

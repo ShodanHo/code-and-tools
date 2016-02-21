@@ -2,6 +2,7 @@
 #include <sstream>
 #include <popt.h>
 #include <unistd.h> // sleep
+#include <mosquitto.h>
 #include "mqtt_publisher.h"
 
 enum {
@@ -77,7 +78,8 @@ int main(int argc, char **argv)
   input_list.push_back(TopicPayloadQos(topic,"hello",0));
   input_list.push_back(TopicPayloadQos(topic,"world",0));
 
-  std::thread mqtt_publisher_thread(run_mqtt_publisher, "localhost", 1883, &input_list);
+  mosquitto_lib_init();
+  std::thread publisher_thread(run_mqtt_publisher, &broker, 1883, &input_list);
 
   int count = 0;
   for (;;) {
@@ -93,6 +95,6 @@ int main(int argc, char **argv)
       break;
     }
   }
-  mqtt_publisher_thread.join();
+  publisher_thread.join();
   return 0;
 }

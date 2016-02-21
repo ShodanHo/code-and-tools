@@ -20,6 +20,6 @@ struct TopicPayloadQos
 
 std::ostream& operator<<(std::ostream& os, const TopicPayloadQos& tpq);
 
-int run_mqtt_publisher(const std::string& hostname, int port, conditioned_list<TopicPayloadQos>* input_list);
+int run_mqtt_publisher(const std::string* hostname, int port, conditioned_list<TopicPayloadQos>* input_list);
 
 #endif // __MQTT_PUBLISHER_H__
