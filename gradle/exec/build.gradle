@@ -1,0 +1,62 @@
+// https://docs.gradle.org/current/dsl/org.gradle.api.tasks.Exec.html
+
+task stopTomcat(type:Exec) {
+  workingDir '../tomcat/bin'
+
+  commandLine './hello.sh'
+
+  //store the output instead of printing to the console:
+  standardOutput = new ByteArrayOutputStream()
+
+  //extension method stopTomcat.output() can be used to obtain the output:
+  ext.output = {
+    return standardOutput.toString()
+  }
+}
+
+task runScript(type:Exec) {
+  args 'def'
+  commandLine './hello.sh'
+
+  //store the output instead of printing to the console:
+  //standardOutput = new ByteArrayOutputStream()
+
+  //extension method stopTomcat.output() can be used to obtain the output:
+  ext.output = {
+    return standardOutput.toString()
+  }
+}
+
+//https://discuss.gradle.org/t/how-to-execute-shell-command-source-or-dot-doesnt-work-with-exec/7271/6
+task runExecutable(type:Exec) {
+  args 'def'
+  executable './hello.sh'
+
+  //store the output instead of printing to the console:
+  //standardOutput = new ByteArrayOutputStream()
+
+  //extension method stopTomcat.output() can be used to obtain the output:
+  ext.output = {
+    return standardOutput.toString()
+  }
+}
+
+task hello(type: Exec) {
+  executable "sh"
+  args "-c", "echo 'hello from your shell'"
+}
+
+task runMakeInDir(type:Exec) {
+  workingDir '../dir'
+
+  commandLine './hello.sh abc'
+
+  //store the output instead of printing to the console:
+  //standardOutput = new ByteArrayOutputStream()
+
+  //extension method stopTomcat.output() can be used to obtain the output:
+  ext.output = {
+    return standardOutput.toString()
+  }
+}
+
