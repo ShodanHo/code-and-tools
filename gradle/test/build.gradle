@@ -1,0 +1,20 @@
+println name
+println project.name
+println project.path
+println project.description
+println project.projectDir
+println project.buildDir
+
+apply plugin: 'cpp'
+
+model {
+  components {
+    hello(NativeExecutableSpec) {
+    }
+  }
+}
+
+task test << {
+    println "running test"
+    //build/exe/hello/hello
+}
