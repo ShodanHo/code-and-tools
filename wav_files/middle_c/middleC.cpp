@@ -7,9 +7,10 @@
 
 
 
-// Adapted from http://www.cplusplus.com/forum/beginner/166954/
-// and http://stackoverflow.com/questions/22226872/two-problems-when-writing-to-wav-c
-
+// Adapted from:
+// http://www.cplusplus.com/forum/beginner/166954/
+// http://stackoverflow.com/questions/22226872/two-problems-when-writing-to-wav-c
+// http://stackoverflow.com/questions/13660777/c-reading-the-data-part-of-a-wav-file
 
 #include <iostream>
 #include <cstdint>
