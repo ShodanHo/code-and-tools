@@ -32,6 +32,52 @@ using namespace little_endian_io;
 
 int main()
 {
+  std::ofstream f( "example.wav", std::ios::binary );
+
+  typedef struct  WAV_HEADER{
+      char                RIFF[4];        // RIFF Header      Magic header
+      unsigned long       ChunkSize;      // RIFF Chunk Size
+      char                WAVE[4];        // WAVE Header
+      char                fmt[4];         // FMT header
+      unsigned long       Subchunk1Size;  // Size of the fmt chunk
+      unsigned short      AudioFormat;    // Audio format 1=PCM,6=mulaw,7=alaw, 257=IBM Mu-Law, 258=IBM A-Law, 259=ADPCM
+      unsigned short      NumOfChan;      // Number of channels 1=Mono 2=Sterio
+      unsigned long       SamplesPerSec;  // Sampling Frequency in Hz
+      unsigned long       bytesPerSec;    // bytes per second
+      unsigned short      blockAlign;     // 2=16-bit mono, 4=16-bit stereo
+      unsigned short      bitsPerSample;  // Number of bits per sample
+      char                Subchunk2ID[4]; // "data"  string
+      unsigned long       Subchunk2Size;  // Sampled data length
+
+  }wav_hdr;
+  // Write the file headers
+  // RIFF Header      Magic header
+  // RIFF Chunk Size
+  // WAVE Header
+  f << "RIFF----WAVEfmt ";     // (chunk size to be filled in later)
+  write_word( f,     16, 4 );  // no extension data
+
+  // Audio format 1=PCM,6=mulaw,7=alaw, 257=IBM Mu-Law, 258=IBM A-Law, 259=ADPCM
+  write_word( f,      1, 2 );  // PCM - integer samples
+
+  // Number of channels 1=Mono 2=Sterio
+  write_word( f,      2, 2 );  // two channels (stereo file)
+
+  // Sampling Frequency in Hz
+  write_word( f,  44100, 4 );  // samples per second (Hz)
+
+  // bytes per second
+  write_word( f, 176400, 4 );  // (Sample Rate * BitsPerSample * Channels) / 8
+
+  // 2=16-bit mono, 4=16-bit stereo
+  write_word( f,      4, 2 );  // data block size (size of two integer samples, one for each channel, in bytes)
+
+  // Number of bits per sample
+  write_word( f,     16, 2 );  // number of bits per sample (use a multiple of 8)
+
+  // Write the data chunk header
+  size_t data_chunk_pos = f.tellp();
+
   // char                Subchunk2ID[4]; // "data"  string
   // unsigned long       Subchunk2Size;  // Sampled data length
   f << "data----";  // (chunk size to be filled in later)
