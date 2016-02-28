@@ -5,8 +5,35 @@
  *      Author: stuartf
  */
 
+
+
+// Adapted from http://www.cplusplus.com/forum/beginner/166954/
+// and http://stackoverflow.com/questions/22226872/two-problems-when-writing-to-wav-c
+
+
+#include <iostream>
+#include <cstdint>
+#include <cmath>
+#include <fstream>
+
+using namespace std;
+
+namespace little_endian_io
 int main()
 {
+  // char                Subchunk2ID[4]; // "data"  string
+  // unsigned long       Subchunk2Size;  // Sampled data length
+  f << "data----";  // (chunk size to be filled in later)
+
+  // Write the audio samples
+  // (We'll generate a single C4 note with a sine wave, fading from left to right)
+  constexpr double two_pi = 6.283185307179586476925286766559;
+  constexpr double max_amplitude = 32760;  // "volume"
+
+  double hz        = 44100;    // samples per second
+  double frequency = 261.626;  // middle C
+  double seconds   = 2.5;      // time
+
   int N = hz * seconds;  // total number of samples
   for (int n = 0; n < N; n++)
   {
