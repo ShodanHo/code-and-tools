@@ -35,6 +35,7 @@ int main()
 {
   std::ofstream f( "example.wav", std::ios::binary );
 
+#if 0
   typedef struct  WAV_HEADER{
       char                RIFF[4];        // RIFF Header      Magic header
       unsigned long       ChunkSize;      // RIFF Chunk Size
@@ -51,6 +52,7 @@ int main()
       unsigned long       Subchunk2Size;  // Sampled data length
 
   }wav_hdr;
+#endif
   // Write the file headers
   // RIFF Header      Magic header
   // RIFF Chunk Size
