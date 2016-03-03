@@ -12,11 +12,17 @@
 .SUFFIXES: .c .cpp .o .y
 
 MAKEFILE_DEPEND = .depend
+COMPILE_DIRECTIVES =
+COMPILE_DIRECTIVES += -std=c++11
+COMPILE_DIRECTIVES += -g
+COMPILE_DIRECTIVES += -Wall
+COMPILE_DIRECTIVES += -I ../../templates
+COMPILE_DIRECTIVES += -I ../../common
 
 LINK=c++ $^ -o $@
 
 .cpp.o:
-	c++ -std=c++11 -g -Wall -c $< -o $@
+	c++ $(COMPILE_DIRECTIVES) -c $< -o $@
 
 TARGETS =
 TARGETS += test_waveFile
@@ -25,7 +31,7 @@ all:	$(TARGETS)
 
 
 depend:
-	c++ -std=c++11 -MM *.cpp > $(MAKEFILE_DEPEND)
+	c++ $(COMPILE_DIRECTIVES) -MM *.cpp > $(MAKEFILE_DEPEND)
 
 clean:
 	rm -f *.o $(TARGETS) $(MAKEFILE_DEPEND)
