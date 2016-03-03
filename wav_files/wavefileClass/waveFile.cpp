@@ -77,6 +77,48 @@ WaveFile::WaveFile(decltype(fileName) _fileName)
   fclose(wavFile);
 }
 
+std::size_t WaveFile::getChannelData(unsigned channel, std::size_t from,
+                                     int16_t *samples, std::size_t count)
+{
+  FILE* wavFile = fopen(fileName.c_str(), "r");
+  if (wavFile == nullptr)
+  {
+    fprintf(stderr, "Unable to open wave file: %s\n", fileName.c_str());
+    return 0;
+  }
+
+  //Read the header
+
+  size_t bytesRead = fread(&wavHeader, 1, sizeof(wavHeader), wavFile);
+  if (bytesRead != sizeof(wavHeader)) {
+    fclose(wavFile);
+    return 0;
+  }
+
+  //Read the data
+  uint16_t bytesPerSample = wavHeader.bitsPerSample / 8;      //Number     of bytes per sample
+  auto channels = wavHeader.NumOfChan;
+  auto seek = channels * bytesPerSample * from;
+
+  fseek(wavFile, seek, SEEK_CUR);
+
+  unsigned i;
+  for (i = 0; i < count; ++i) {
+    int16_t channelData[2]; // FIXUP. this only cope with 2 channel files
+    bytesRead = fread(channelData, 1, sizeof(channelData), wavFile);
+    if (bytesRead != sizeof(channelData)) {
+      fprintf(stderr, "unable to read wav file data at sample %u\n", i);
+      fprintf(stderr, "read %u bytes\n", bytesRead);
+      fclose(wavFile);
+      return 0;
+    }
+    *samples++ = channelData[channel & 1]; // FIXUP. this only cope with 2 channel files
+  }
+
+  fclose(wavFile);
+  return i;
+}
+
 std::string WaveFile::toString(void) const
 {
   std::ostringstream oss;

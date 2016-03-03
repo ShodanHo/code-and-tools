@@ -3,6 +3,8 @@
 #include <cmath> // sin()
 #include <gtest/gtest.h>
 #include "waveFile.h"
+#include "common_utils.h"
+#include "util_templates.h"
 
 TEST(WaveFile, getters)
 {
@@ -15,9 +17,43 @@ TEST(WaveFile, getters)
   EXPECT_TRUE(wf.fileLength() == 441044);
 }
 
-TEST(WaveFile, streaming)
+TEST(WaveFile, channel1of2)
 {
   WaveFile wf("example.wav");
+  unsigned channel = 0;
+  std::size_t from = 1000;
+  int16_t samples[10];
+  std::size_t count = array_length(samples);
+
+  std::size_t size = wf.getChannelData(channel, from, samples, count);
+  EXPECT_TRUE(size == array_length(samples));
+  //std::cout << STR(size) << " samples read\n";
+
+  constexpr double two_pi = 6.283185307179586476925286766559;
+  constexpr double max_amplitude = 32760;  // "volume"
+
+  double hz        = 44100;    // samples per second
+  double frequency = 261.626;  // middle C
+  double seconds   = 2.5;      // time
+
+  int N = hz * seconds;  // total number of samples
+  for (unsigned n = 0; n < count; n++)
+  {
+    double amplitude = (double)(n + from) / N * max_amplitude;
+    //double amplitude = (double)max_amplitude;
+    double value     = sin( (two_pi * (n + from) * frequency) / hz );
+    int channel0 = (int)(                 amplitude  * value);
+    int channel1 = (int)((max_amplitude - amplitude) * value);
+    //std::cout << STR(channel0) << ' '  << STR(channel1) << ' ' << STR(samples[n]) << '\n';
+    if (channel == 0) {
+      EXPECT_TRUE(channel0 == samples[n]);
+    }
+    else
+    {
+      EXPECT_TRUE(channel1 == samples[n]);
+    }
+  }
+
 }
 
 template <typename Word>

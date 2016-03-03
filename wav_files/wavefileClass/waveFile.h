@@ -44,6 +44,8 @@ public:
   uint32_t numberOfSamples() const { return wavHeader.Subchunk2Size / numberBytesPerSample(); }
   uint32_t numberOfSamplesPerChannel() const { return numberOfSamples() / numberOfChannels(); }
 
+  std::size_t getChannelData(unsigned channel, std::size_t from, int16_t *samples, std::size_t count);
+
   int fileLength() const { return fileLen; }
 
   std::string toString(void) const;
