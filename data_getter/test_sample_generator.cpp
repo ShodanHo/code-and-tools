@@ -1,4 +1,4 @@
-#include "getters.h"
+#include "sample_generator.h"
 #include <iostream>
 #include <list>
 #include <array>
