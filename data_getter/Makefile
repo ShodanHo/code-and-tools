@@ -29,7 +29,7 @@ LINK=c++ $(LINKER_DIRECTIVES) $^ -o $@
 	c++ $(CPP_COMPILER_DIRECTIVES) -c $< -o $@
 
 TARGETS =
-TARGETS += test_getters
+TARGETS += test_sample_generator
 
 all:	$(TARGETS)
 
@@ -39,7 +39,7 @@ clean:
 depend:
 	c++ $(CPP_COMPILER_DIRECTIVES) -MM *.cpp > $(MAKEFILE_DEPEND)
 
-test_getters: test_getters.o
+test_sample_generator: test_sample_generator.o
 	$(LINK)
 
 -include $(MAKEFILE_DEPEND)
