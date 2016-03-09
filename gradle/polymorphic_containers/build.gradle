@@ -1,0 +1,21 @@
+apply plugin: 'cpp'
+
+model {
+  components {
+    hello(NativeExecutableSpec)
+  }
+}
+
+model {
+  binaries {
+    all {
+      cppCompiler.args '-std=c++11', '-Werror=switch-enum'
+    }
+  }
+}
+
+model {
+  components {
+    hello.baseName = "helloExe" 
+  }
+}
