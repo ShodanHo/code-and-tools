@@ -1,0 +1,22 @@
+apply plugin: 'cpp'
+
+model {
+  components {
+    testPrebuilt(NativeExecutableSpec) {
+      sources.cpp.lib library: "myPrebuiltLibrary", linkage: "static"
+    }
+  }
+}
+
+model {
+  repositories {
+    libs(PrebuiltLibraries) {
+      myPrebuiltLibrary {
+        headers.srcDir "prebuiltLibrary/headers"
+        binaries.withType(StaticLibraryBinary) {
+          staticLibraryFile = file("prebuiltLibrary/lib/libprebuilt.a")
+        }
+      }
+    }
+  }
+}
