@@ -1,16 +1,18 @@
 apply plugin: 'cpp'
 
+// global c++ compile flags
 model {
-  components {
-    hello(NativeExecutableSpec)
+  binaries {
+    all {
+      cppCompiler.args '-std=c++11'
+      cppCompiler.args '-Werror=switch-enum'
+    }
   }
 }
 
 model {
-  binaries {
-    all {
-      cppCompiler.args '-std=c++11', '-Werror=switch-enum'
-    }
+  components {
+    hello(NativeExecutableSpec)
   }
 }
 
