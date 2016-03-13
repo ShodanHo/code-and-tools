@@ -1,0 +1,117 @@
+// https://github.com/gradle/gradle/tree/master/subprojects/docs/src/samples/native-binaries/google-test
+// https://discuss.gradle.org/t/how-can-i-configure-a-source-set-for-a-googletest-component/11600/2
+
+apply plugin: "cpp"
+apply plugin: 'google-test'
+
+List<String> untestedComponents = new ArrayList<String>()
+untestedComponents.add('Exe3')
+untestedComponents.add('Lib4')
+
+// global c++ compile and link flags
+model {
+  binaries {
+    all {
+      cppCompiler.args '-std=c++11'
+      cppCompiler.args '-Werror=switch-enum'
+    }
+  }
+}
+
+model {
+  flavors {
+    flav1
+    flav2
+  }
+  components {
+    lib1(NativeLibrarySpec)
+    lib2(NativeLibrarySpec)
+    exe3(NativeExecutableSpec)
+    lib4(NativeLibrarySpec)
+  }
+  testSuites {
+    lib2Test {
+      sources {
+        cpp.source.srcDir 'src/test_lib2'
+      }
+    }
+  }
+}
+
+model {
+  binaries {
+
+    withType(GoogleTestTestSuiteBinarySpec) {
+      if (flavor == flavors.flav1) {
+        cppCompiler.define "FLAVOUR1"
+      }
+
+      if (flavor == flavors.flav2) {
+        cppCompiler.define "FLAVOUR2"
+      }
+
+      cppCompiler.args '-pthread'
+      linker.args '-pthread'
+      linker.args '-lgtest'
+
+    }
+  }
+}
+
+tasks.withType(RunTestExecutable) {
+    args "--gtest_output=xml:test_detail.xml"
+}
+
+// avoid compiling some tests
+tasks.withType(CppCompile) { task->
+
+    untestedComponents.each {it->
+        def x = "compile" + it + "Test"
+
+        if (task.name.startsWith(x)) {
+            task.enabled = false
+            println "Disable " + name
+        }
+    }
+}
+
+// avoid linking some tests
+tasks.withType(LinkExecutable) { task->
+
+    untestedComponents.each {it->
+        def x = "link" + it + "Test"
+
+        if (task.name.startsWith(x)) {
+            task.enabled = false
+            println "Disable " + name
+        }
+    }
+}
+
+// avoid installing some tests
+tasks.withType(InstallExecutable) { task->
+
+    untestedComponents.each {it->
+        def x = "install" + it + "Test"
+
+        if (task.name.startsWith(x)) {
+            task.enabled = false
+            println "Disable " + name
+        }
+    }
+}
+
+// avoid running some tests
+tasks.withType(RunTestExecutable) { task->
+
+    untestedComponents.each {it->
+        def x = "run" + it + "Test"
+
+        if (task.name.startsWith(x)) {
+            task.enabled = false
+            println "Disable " + name
+        }
+    }
+}
+
+
