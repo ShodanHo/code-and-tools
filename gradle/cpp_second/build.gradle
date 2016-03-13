@@ -1,0 +1,21 @@
+apply plugin: 'cpp'
+
+model {
+  components {
+
+    hello(NativeExecutableSpec) {
+      sources {
+        cpp {
+          source {
+            srcDir "other"
+          }
+        }
+      }
+      binaries.all {
+          cppCompiler.args '-pthread'
+          linker.args '-pthread'
+          linker.args '-lgtest'
+      }
+    }
+  }
+}
