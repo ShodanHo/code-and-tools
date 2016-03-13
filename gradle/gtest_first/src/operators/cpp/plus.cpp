@@ -2,7 +2,7 @@
 
 int plus(int a, int b) {
 #ifdef PLUS_BROKEN
-    return 2;
+    return a + b;
 #else
     return a + b;
 #endif
