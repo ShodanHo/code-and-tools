@@ -1,0 +1,21 @@
+apply plugin: "c"
+
+model {
+  binaries {
+    all {
+    }
+  }
+}
+
+model {
+  components {
+    aDIO(NativeLibrarySpec) {
+      binaries {
+        all {
+          cCompiler.args '-O6'
+          cCompiler.args '-Wall'
+        }
+      }
+    }
+  }
+}
