@@ -46,6 +46,15 @@ public:
 
   std::size_t getChannelData(unsigned channel, std::size_t from, int16_t *samples, std::size_t count);
 
+  static void writeWaveFile(const std::string& filename,
+                            uint16_t channels,
+                            uint32_t samplesPerSecond, // 44100
+                            uint32_t bytesPerSecond, // 176400
+                            uint16_t bytesPerSampleForAllChannels, // 4
+                            uint16_t bitsPerSample, // 16
+                            void *buffer,
+                            std::size_t size);
+
   int fileLength() const { return fileLen; }
 
   std::string toString(void) const;
