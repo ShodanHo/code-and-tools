@@ -1,0 +1,6 @@
+task extractTar << { 
+  copy { 
+   from tarTree('xyz/abc.tar') 
+   into buildDir 
+  } 
+}
