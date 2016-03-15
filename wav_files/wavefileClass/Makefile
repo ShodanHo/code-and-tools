@@ -39,7 +39,7 @@ clean:
 depend:
 	c++ $(CPP_COMPILER_DIRECTIVES) -MM *.cpp > $(MAKEFILE_DEPEND)
 
-test_waveFile: test_waveFile.o waveFile.o
+test_waveFile: test_waveFile.o waveFile.o string_utils.o
 	$(LINK)
 
 -include $(MAKEFILE_DEPEND)

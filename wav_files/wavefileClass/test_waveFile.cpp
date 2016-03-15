@@ -2,24 +2,158 @@
 #include <fstream>
 #include <cmath> // sin()
 #include <gtest/gtest.h>
-#include "waveFile.h"
 #include "common_utils.h"
 #include "util_templates.h"
+#include "waveFile.h"
 
-TEST(WaveFile, getters)
+static void writeConstantValueFile(const std::string& filename, std::size_t size)
 {
-  WaveFile wf("example.wav");
-  EXPECT_TRUE(wf.numberOfChannels() == 2);
-  EXPECT_TRUE(wf.samplesPerSec() == 44100);
-  EXPECT_TRUE(wf.numberBytesPerSample() == 2);
-  EXPECT_TRUE(wf.numberOfSamples() == 220500);
-  EXPECT_TRUE(wf.numberOfSamplesPerChannel() == 110250);
-  EXPECT_TRUE(wf.fileLength() == 441044);
+  std::ofstream outfile(filename, std::ios::out | std::ios::trunc | std::ios::binary);
+
+  while (size--)
+    outfile << "a";
+
+  outfile.close();
 }
 
-TEST(WaveFile, channel1of2)
+TEST(WaveFileReader, UnableToReadWavefileDataExceptions)
 {
-  WaveFile wf("example.wav");
+  // sizeof(WavHdr)=44
+
+  { // no data, read nothing
+    std::string filename("same.txt");
+    writeConstantValueFile(filename, sizeof(WavHdr)); // same size as the header
+    try {
+      WaveFileReader wf(filename);
+      SUCCEED(); // should reach here
+
+      int16_t *samples = nullptr;
+      try {
+        wf.getChannelData(0,0,samples,0);
+        SUCCEED(); // should reach here
+      } catch (const UnableToReadWavefileDataException& e) {
+        FAIL(); // should not reach here
+      } catch (...) {
+        FAIL(); // should not reach here
+      }
+    } catch (const UnableToReadWavefileHeaderException& e) {
+      FAIL(); // should not reach here
+      std::cout << e.what() << '\n';
+      EXPECT_EQ(std::string(e.what()), std::string("Unable to read wave file header of file:small.txt"));
+    } catch (...) {
+      FAIL(); // should not reach here
+    }
+
+    remove(filename.c_str());
+  }
+
+  { // no data, read something
+    std::string filename("same.txt");
+    writeConstantValueFile(filename, sizeof(WavHdr)); // same size as the header
+    try {
+      WaveFileReader wf(filename);
+      SUCCEED(); // should reach here
+
+      int16_t *samples = nullptr;
+      try {
+        wf.getChannelData(0,0,samples,1);
+        FAIL(); // should not reach here
+      } catch (const UnableToReadWavefileDataException& e) {
+        SUCCEED(); // should reach here
+      } catch (...) {
+        FAIL(); // should not reach here
+      }
+    } catch (const UnableToReadWavefileHeaderException& e) {
+      FAIL(); // should not reach here
+      std::cout << e.what() << '\n';
+      EXPECT_EQ(std::string(e.what()), std::string("Unable to read wave file header of file:small.txt"));
+    } catch (...) {
+      FAIL(); // should not reach here
+    }
+
+    remove(filename.c_str());
+  }
+}
+
+TEST(WaveFileReader, UnableToReadWavefileHeaderExceptions)
+{
+  // sizeof(WavHdr)=44
+  {
+    std::string filename("small.txt");
+    writeConstantValueFile(filename, sizeof(WavHdr) - 1); // just smaller than the header
+    try {
+      WaveFileReader wf(filename);
+      FAIL(); // should not reach here
+    } catch (const UnableToReadWavefileHeaderException& e) {
+      SUCCEED(); // should reach here
+      std::cout << e.what() << '\n';
+      EXPECT_EQ(std::string(e.what()), std::string("Unable to read wave file header of file:small.txt"));
+    } catch (...) {
+      FAIL(); // should not reach here
+    }
+    remove(filename.c_str());
+  }
+
+  {
+    std::string filename("same.txt");
+    writeConstantValueFile(filename, sizeof(WavHdr)); // same size as the header
+    try {
+      WaveFileReader wf(filename);
+      SUCCEED(); // should reach here
+    } catch (const UnableToReadWavefileHeaderException& e) {
+      FAIL(); // should not reach here
+      std::cout << e.what() << '\n';
+      EXPECT_EQ(std::string(e.what()), std::string("Unable to read wave file header of file:small.txt"));
+    } catch (...) {
+      FAIL(); // should not reach here
+    }
+    remove(filename.c_str());
+  }
+
+  {
+    std::string filename("same.txt");
+    writeConstantValueFile(filename, sizeof(WavHdr) + 1); // a bit larger than the header
+    try {
+      WaveFileReader wf(filename);
+      SUCCEED(); // should reach here
+    } catch (const UnableToReadWavefileHeaderException& e) {
+      FAIL(); // should not reach here
+      std::cout << e.what() << '\n';
+      EXPECT_EQ(std::string(e.what()), std::string("Unable to read wave file header of file:small.txt"));
+    } catch (...) {
+      FAIL(); // should not reach here
+    }
+    remove(filename.c_str());
+  }
+}
+
+TEST(WaveFileReader, UnableToOpenFileException)
+{
+  try {
+    WaveFileReader wf("abc.def");
+    FAIL(); // should not reach here
+  } catch (const UnableToOpenFileException& e) {
+    SUCCEED(); // should reach here
+    std::cout << e.what() << '\n';
+    EXPECT_EQ(std::string(e.what()), std::string("Unable to open file:abc.def"));
+  } catch (...) {
+    FAIL(); // should not reach here
+  }
+}
+
+TEST(WaveFileReader, getters)
+{
+  WaveFileReader wf("example.wav");
+  EXPECT_EQ(wf.numberOfChannels(), 2);
+  EXPECT_EQ(wf.samplesPerSec(), 44100);
+  EXPECT_EQ(wf.numberBytesPerSample(), 2);
+  EXPECT_EQ(wf.numberOfSamples(), 220500);
+  EXPECT_EQ(wf.numberOfSamplesPerChannel(), 110250);
+}
+
+TEST(WaveFileReader, channel1of2)
+{
+  WaveFileReader wf("example.wav");
   unsigned channel = 0;
   std::size_t from = 1000;
   int16_t samples[10];
@@ -131,7 +265,7 @@ static void writeWaveFile()
   write_word( f, file_length - 8, 4 );
 }
 
-#if 0
+#if 1
 static void writeWaveFile2(const std::string& filename,
                            uint16_t channels,
                            uint32_t samplesPerSecond, // 44100
@@ -212,6 +346,7 @@ static void writeWaveFile2(const std::string& filename,
 
 int main(int argc, char **argv)
 {
+  std::cout << STR(sizeof(WavHdr)) << '\n';
   {
     constexpr uint32_t samplesPerSecond = 44100;
     constexpr float time = 2.5;      // seconds
@@ -233,14 +368,73 @@ int main(int argc, char **argv)
       data[n+n+1] = (int16_t)((max_amplitude - amplitude) * value);
     }
 
-    WaveFile::writeWaveFile("example2.wav",
-                            channels, // uint16_t channels,
-                            samplesPerSecond, // uint32_t samplesPerSecond = 44100,
-                            samplesPerSecond * sizeof(int16_t) * channels, // uint32_t bytesPerSecond = 176400,
-                            sizeof(int16_t) * channels, // uint16_t bytesPerSampleForAllChannels = 4,
-                            sizeof(int16_t) * 8, // uint16_t bitsPerSample = 16)
-                            data,
-                            sizeof(int16_t) * samples * channels);
+#if 0
+    WriteWavefile wf("example2.wav",
+                     channels, // uint16_t channels,
+                     samplesPerSecond, // uint32_t samplesPerSecond = 44100,
+                     samplesPerSecond * sizeof(int16_t) * channels, // uint32_t bytesPerSecond = 176400,
+                     sizeof(int16_t) * channels, // uint16_t bytesPerSampleForAllChannels = 4,
+                     sizeof(int16_t) * 8); // uint16_t bitsPerSample = 16)
+
+    wf.WriteHeader();
+
+    wf.AppendData(data, sizeof(int16_t) * samples * channels);
+
+    wf.FinalizeHeader();
+#else
+    writeWaveFile2("example2.wav",
+                   channels, // uint16_t channels,
+                   samplesPerSecond, // uint32_t samplesPerSecond = 44100,
+                   samplesPerSecond * sizeof(int16_t) * channels, // uint32_t bytesPerSecond = 176400,
+                   sizeof(int16_t) * channels, // uint16_t bytesPerSampleForAllChannels = 4,
+                   sizeof(int16_t) * 8, // uint16_t bitsPerSample = 16)
+                   data, sizeof(int16_t) * samples * channels);
+#endif
+    delete [] data;
+  }
+
+  {
+    constexpr uint32_t samplesPerSecond = 44100;
+    constexpr float time = 2.5;      // seconds
+    constexpr uint32_t samples = samplesPerSecond * time;
+    constexpr uint16_t channels = 2;
+    int16_t *data = new int16_t[samples * channels];
+
+    constexpr double two_pi = 6.283185307179586476925286766559;
+    constexpr double max_amplitude = 32760;  // "volume"
+    double frequency = 261.626;  // middle C
+
+    std::cout << STR(samples) << '\n';
+    for (unsigned n = 0; n < samples; n++)
+    {
+      double amplitude = (double)n / samples * max_amplitude;
+      //double amplitude = (double)max_amplitude;
+      double value     = sin( (two_pi * n * frequency) / samplesPerSecond );
+      data[n+n]   = (int16_t)(                 amplitude  * value);
+      data[n+n+1] = (int16_t)((max_amplitude - amplitude) * value);
+    }
+
+#if 1
+    WriteWavefile wf("example3.wav",
+                     channels, // uint16_t channels,
+                     samplesPerSecond, // uint32_t samplesPerSecond = 44100,
+                     samplesPerSecond * sizeof(int16_t) * channels, // uint32_t bytesPerSecond = 176400,
+                     sizeof(int16_t) * channels, // uint16_t bytesPerSampleForAllChannels = 4,
+                     sizeof(int16_t) * 8); // uint16_t bitsPerSample = 16)
+    wf.WriteHeader();
+
+    wf.AppendData(data, sizeof(int16_t) * samples * channels);
+
+    wf.FinalizeHeader();
+#else
+    writeWaveFile2("example3.wav",
+                   channels, // uint16_t channels,
+                   samplesPerSecond, // uint32_t samplesPerSecond = 44100,
+                   samplesPerSecond * sizeof(int16_t) * channels, // uint32_t bytesPerSecond = 176400,
+                   sizeof(int16_t) * channels, // uint16_t bytesPerSampleForAllChannels = 4,
+                   sizeof(int16_t) * 8, // uint16_t bitsPerSample = 16)
+                   data, sizeof(int16_t) * samples * channels);
+#endif
     delete [] data;
   }
 
@@ -264,21 +458,23 @@ int main(int argc, char **argv)
       data[n]   = (int16_t)(                 amplitude  * value);
     }
 
-    WaveFile::writeWaveFile("example3.wav",
-                            channels, // uint16_t channels,
-                            samplesPerSecond, // uint32_t samplesPerSecond = 44100,
-                            samplesPerSecond * sizeof(int16_t) * channels, // uint32_t bytesPerSecond = 176400,
-                            sizeof(int16_t) * channels, // uint16_t bytesPerSampleForAllChannels = 4,
-                            sizeof(int16_t) * 8, // uint16_t bitsPerSample = 16)
-                            data,
-                            sizeof(int16_t) * samples * channels);
+    WriteWavefile wf("example4.wav",
+                     channels, // uint16_t channels,
+                     samplesPerSecond, // uint32_t samplesPerSecond = 44100,
+                     samplesPerSecond * sizeof(int16_t) * channels, // uint32_t bytesPerSecond = 176400,
+                     sizeof(int16_t) * channels, // uint16_t bytesPerSampleForAllChannels = 4,
+                     sizeof(int16_t) * 8); // uint16_t bitsPerSample = 16)
+    wf.WriteHeader();
+    wf.AppendData(data, sizeof(int16_t) * samples * channels);
+    wf.FinalizeHeader();
+
     delete [] data;
   }
 
   std::cout << "Hello, world\n";
   writeWaveFile();
 
-  WaveFile wf("example.wav");
+  WaveFileReader wf("example.wav");
 
   std::cout << wf << '\n';
 

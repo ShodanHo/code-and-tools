@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <string>
+#include "string_utils.h"
 
 struct  WavHdr
 {
@@ -28,38 +29,94 @@ struct  WavHdr
 
 std::ostream& operator<<(std::ostream& os, const WavHdr& wavHdr);
 
-class WaveFile
+class UnableToOpenFileException : public std::exception
+{
+  std::string whatMsg;
+public:
+  UnableToOpenFileException(const std::string& filename) :
+    whatMsg(std::string("Unable to open file:") + filename) {}
+
+  virtual const char* what() const noexcept { return whatMsg.c_str(); }
+};
+
+class UnableToReadWavefileHeaderException : public std::exception
+{
+  std::string whatMsg;
+public:
+  UnableToReadWavefileHeaderException(const std::string& filename) :
+    whatMsg(std::string("Unable to read wave file header of file:") + filename) {}
+
+  virtual const char* what() const noexcept { return whatMsg.c_str(); }
+};
+
+class UnableToReadWavefileDataException : public std::exception
+{
+  std::string whatMsg;
+public:
+  UnableToReadWavefileDataException(const std::string& filename,
+                                    unsigned readPosition);
+
+  virtual const char* what() const noexcept { return whatMsg.c_str(); }
+};
+
+class WaveFileReader
 {
 private:
   const std::string fileName;
   WavHdr wavHeader;
   int fileLen;
 
+  void ReadHeaderAndLength()
+    throw(UnableToOpenFileException,UnableToReadWavefileHeaderException);
+
 public:
-  WaveFile(decltype(fileName) _filename);
+  WaveFileReader(decltype(fileName) _filename)
+    throw(UnableToOpenFileException,UnableToReadWavefileHeaderException);
 
   uint16_t numberOfChannels() const { return wavHeader.NumOfChan; }
   uint32_t samplesPerSec() const { return wavHeader.SamplesPerSec; }
   uint16_t numberBytesPerSample() const { return wavHeader.bitsPerSample / 8; }
   uint32_t numberOfSamples() const { return wavHeader.Subchunk2Size / numberBytesPerSample(); }
   uint32_t numberOfSamplesPerChannel() const { return numberOfSamples() / numberOfChannels(); }
-
-  std::size_t getChannelData(unsigned channel, std::size_t from, int16_t *samples, std::size_t count);
-
-  static void writeWaveFile(const std::string& filename,
-                            uint16_t channels,
-                            uint32_t samplesPerSecond, // 44100
-                            uint32_t bytesPerSecond, // 176400
-                            uint16_t bytesPerSampleForAllChannels, // 4
-                            uint16_t bitsPerSample, // 16
-                            void *buffer,
-                            std::size_t size);
-
   int fileLength() const { return fileLen; }
+
+  std::size_t getChannelData(uint16_t channel, std::size_t fromSample, int16_t *samples,
+                             std::size_t numSamples)
+    throw (UnableToOpenFileException, UnableToReadWavefileHeaderException, UnableToReadWavefileDataException);
 
   std::string toString(void) const;
 };
 
-std::ostream& operator<<(std::ostream& os, const WaveFile& waveFile);
+std::ostream& operator<<(std::ostream& os, const WaveFileReader& waveFile);
+
+class WriteWavefile
+{
+  const std::string filename;
+  const uint16_t channels;
+  const uint32_t samplesPerSecond;
+  const uint32_t bytesPerSecond;
+  const uint16_t bytesPerSampleForAllChannels;
+  const uint16_t bitsPerSample;
+
+public:
+  WriteWavefile(const std::string& _filename,
+                uint16_t _channels,
+                uint32_t _samplesPerSecond,
+                uint32_t _bytesPerSecond,
+                uint16_t _bytesPerSampleForAllChannels,
+                uint16_t _bitsPerSample)
+  : filename(_filename)
+  , channels(_channels)
+  , samplesPerSecond(_samplesPerSecond)
+  , bytesPerSecond(_bytesPerSecond)
+  , bytesPerSampleForAllChannels(_bytesPerSampleForAllChannels)
+  , bitsPerSample(_bitsPerSample){}
+
+  void WriteHeader();
+
+  void AppendData(void *buffer, std::size_t size);
+
+  void FinalizeHeader(); // write the size into the header
+};
 
 #endif // __WAVEFILE_H__
