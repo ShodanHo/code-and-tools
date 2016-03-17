@@ -1,9 +1,18 @@
+/****************************************************************************************
+ *
+ * Description: WAV file processing.
+ *
+ * Class to process .wav files.
+ * Reference:
+ *  http://stackoverflow.com/questions/13660777/c-reading-the-data-part-of-a-wav-file
+ *
+ ***************************************************************************************/
+
 #ifndef __WAVEFILE_H__
 #define __WAVEFILE_H__
 
 #include <stdint.h>
 #include <string>
-#include "string_utils.h"
 
 struct  WavHdr
 {
@@ -80,6 +89,21 @@ public:
   uint32_t numberOfSamplesPerChannel() const { return numberOfSamples() / numberOfChannels(); }
   int fileLength() const { return fileLen; }
 
+
+  /**
+   * @brief Gets data for one channel.
+   * Note that the size_t are not true sizeof() counts, but sizeof(int16_t) counts.
+   *
+   * @param channel The channel to get data for. First channel is 0.
+   *
+   * @param samples Where to put the data (16-bit data).
+   *
+   * @param fromSample Sample from which to start taking the data (a counter of 16-bit data).
+   *
+   * @param numSamples How much data to copy (a counter of 16-bit data).
+   *
+   */
+  // only copes with 16-bit data
   std::size_t getChannelData(uint16_t channel, std::size_t fromSample, int16_t *samples,
                              std::size_t numSamples)
     throw (UnableToOpenFileException, UnableToReadWavefileHeaderException, UnableToReadWavefileDataException);
@@ -97,6 +121,9 @@ class WriteWavefile
   const uint32_t bytesPerSecond;
   const uint16_t bytesPerSampleForAllChannels;
   const uint16_t bitsPerSample;
+  bool headerWritten = false;
+
+  void WriteHeader();
 
 public:
   WriteWavefile(const std::string& _filename,
@@ -111,8 +138,6 @@ public:
   , bytesPerSecond(_bytesPerSecond)
   , bytesPerSampleForAllChannels(_bytesPerSampleForAllChannels)
   , bitsPerSample(_bitsPerSample){}
-
-  void WriteHeader();
 
   void AppendData(void *buffer, std::size_t size);
 

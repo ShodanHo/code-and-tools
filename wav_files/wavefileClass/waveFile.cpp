@@ -1,6 +1,14 @@
-// http://stackoverflow.com/questions/13660777/c-reading-the-data-part-of-a-wav-file
-#include "waveFile.h"
+/****************************************************************************************
+ *
+ * Description: WAV file processing.
+ *
+ * Class to process .wav files.
+ * Reference:
+ *  http://stackoverflow.com/questions/13660777/c-reading-the-data-part-of-a-wav-file
+ *
+ ***************************************************************************************/
 
+#include "waveFile.h"
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -16,7 +24,7 @@ UnableToReadWavefileDataException::UnableToReadWavefileDataException(const std::
 }
 
 // find the file size
-int getFileSize(FILE* inFile)
+static int getFileSize(FILE* inFile)
 {
   int fileSize = 0;
   fseek(inFile, 0, SEEK_END);
@@ -127,18 +135,19 @@ std::size_t WaveFileReader::getChannelData(uint16_t channel, std::size_t fromSam
     throw UnableToReadWavefileDataException(fileName,seek);
   }
 
+  std::size_t bytesToRead = (channels == 1) ? sizeof(int16_t) : 2 * sizeof(int16_t);
   unsigned i;
   for (i = 0; i < numSamples; ++i) {
     int16_t channelData[2]; // FIXUP. this only cope with 2 channel files
-    bytesRead = fread(channelData, 1, sizeof(channelData), wavFile);
+    bytesRead = fread(channelData, 1, bytesToRead, wavFile);
 
-    if (bytesRead != sizeof(channelData)) {
+    if (bytesRead != bytesToRead) {
       // reading error
-      fprintf(stderr, "unable to read wav file data at sample %u\n", i);
-      fprintf(stderr, "read %u bytes\n", bytesRead);
+      fprintf(stderr, "unable to read wav file data at sample %u\n", fromSample + i);
+      fprintf(stderr, "read %u bytes of %u\n", bytesRead, bytesToRead);
       fclose(wavFile);
 
-      throw UnableToReadWavefileDataException(fileName, seek + i);
+      throw UnableToReadWavefileDataException(fileName, fromSample + i);
     }
     *samples++ = channelData[channel & 1]; // FIXUP. this only cope with 2 channel files
   }
@@ -154,85 +163,6 @@ std::ostream& write_word( std::ostream& outs, Word value, unsigned size = sizeof
     outs.put( static_cast <char> (value & 0xFF) );
   return outs;
 }
-
-#if 0
-void WaveFileReader::writeWaveFile(const std::string& filename,
-                             uint16_t channels,
-                             uint32_t samplesPerSecond, // 44100
-                             uint32_t bytesPerSecond, // 176400
-                             uint16_t bytesPerSampleForAllChannels, // 4
-                             uint16_t bitsPerSample, // 16
-                             void *buffer,
-                             std::size_t size)
-{
-  std::ofstream f(filename, std::ios::binary );
-
-  // Write the file headers
-  // RIFF Header      Magic header
-  // RIFF Chunk Size
-  // WAVE Header
-  f << "RIFF----WAVEfmt ";     // (chunk size to be filled in later)
-  write_word( f,     16, 4 );  // no extension data
-
-  // Audio format 1=PCM,6=mulaw,7=alaw, 257=IBM Mu-Law, 258=IBM A-Law, 259=ADPCM
-  write_word( f,      1, 2 );  // PCM - integer samples
-
-  // Number of channels 1=Mono 2=Sterio
-  write_word( f, channels, 2 );  // two channels (stereo file)
-
-  // Sampling Frequency in Hz
-  write_word( f, samplesPerSecond, 4 );  // samples per second (Hz)
-
-  // bytes per second
-  write_word( f, bytesPerSecond, 4 );  // (Sample Rate * BitsPerSample * Channels) / 8
-
-  // 2=16-bit mono, 4=16-bit stereo
-  write_word( f, bytesPerSampleForAllChannels, 2 );  // data block size (size of two integer samples, one for each channel, in bytes)
-
-  // Number of bits per sample
-  write_word( f, bitsPerSample, 2 );  // number of bits per sample (use a multiple of 8)
-
-  // Write the data chunk header
-  size_t data_chunk_pos = f.tellp();
-
-  // char                Subchunk2ID[4]; // "data"  string
-  // unsigned long       Subchunk2Size;  // Sampled data length
-  f << "data----";  // (chunk size to be filled in later)
-
-  // Write the audio samples
-#if 0
-  // (We'll generate a single C4 note with a sine wave, fading from left to right)
-  constexpr double two_pi = 6.283185307179586476925286766559;
-  constexpr double max_amplitude = 32760;  // "volume"
-
-  double hz        = 44100;    // samples per second
-  double frequency = 261.626;  // middle C
-  double seconds   = 2.5;      // time
-
-  int N = hz * seconds;  // total number of samples
-  for (int n = 0; n < N; n++)
-  {
-    double amplitude = (double)n / N * max_amplitude;
-    //double amplitude = (double)max_amplitude;
-    double value     = sin( (two_pi * n * frequency) / hz );
-    write_word( f, (int)(                 amplitude  * value), 2 );
-    write_word( f, (int)((max_amplitude - amplitude) * value), 2 );
-  }
-#else
-  f.write(reinterpret_cast<const char*>(buffer), size);
-#endif
-  // (We'll need the final file size to fix the chunk sizes above)
-  size_t file_length = f.tellp();
-
-  // Fix the data chunk header to contain the data size
-  f.seekp( data_chunk_pos + 4 );
-  write_word( f, file_length - (data_chunk_pos + 8) );
-
-  // Fix the file header to contain the proper RIFF chunk size, which is (file size - 8) bytes
-  f.seekp( 0 + 4 );
-  write_word( f, file_length - 8, 4 );
-}
-#endif
 
 std::string WaveFileReader::toString(void) const
 {
@@ -285,10 +215,14 @@ void WriteWavefile::WriteHeader()
   f << "data----";  // (chunk size to be filled in later)
 
   f.close(); // probably done by destructor
+  headerWritten = true;
 }
 
 void WriteWavefile::AppendData(void *buffer, std::size_t size)
 {
+  if (!headerWritten)
+    this->WriteHeader();
+
   std::ofstream f(filename, std::ios::binary | std::ios::app); // append to the end
 
   f.write(reinterpret_cast<const char*>(buffer), size);
@@ -298,6 +232,9 @@ void WriteWavefile::AppendData(void *buffer, std::size_t size)
 
 void WriteWavefile::FinalizeHeader()
 {
+  if (!headerWritten)
+    this->WriteHeader();
+
   std::fstream f(filename, std::ios::binary | std::ios::in | std::ios::out | std::ios::ate); // NB: now an fstream. start at the end
 
   // (We'll need the final file size to fix the chunk sizes above)
