@@ -20,3 +20,5 @@ git reflog
 git reset HEAD@{2}
 git reflog show master
 git reset ORIG_HEAD
+
+git remote add origin git@github.com:ShodanHo/cplusplus11-thread-safe-containers.git
